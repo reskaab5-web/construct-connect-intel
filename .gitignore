@@ -1,0 +1,18 @@
+# Data files (embedded in index.html at build time)
+*.json
+enriched_data.json
+
+# Python build scripts (stay local)
+*.py
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+*.swp
+
+# Logs
+*.log
