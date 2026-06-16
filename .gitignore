@@ -1,6 +1,7 @@
 # Data files (embedded in index.html at build time)
-*.json
 enriched_data.json
+*.json
+!vercel.json
 
 # Python build scripts (stay local)
 *.py
