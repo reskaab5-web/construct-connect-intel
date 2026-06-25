@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>District Intelligence Platform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:      #0f1117;
+    --surface: #1a1d27;
+    --border:  #2a2d3a;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
+    --hot:     #ef4444;
+    --warm:    #f97316;
+    --cold:    #3b82f6;
+    --watch:   #6b7280;
+    --accent:  #6366f1;
+    --green:   #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; }
+
+  /* ── Layout ── */
+  .shell { display: grid; grid-template-rows: 56px 1fr; min-height: 100vh; }
+  header { display: flex; align-items: center; gap: 16px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.02em; }
+  header .subtitle { color: var(--muted); font-size: 12px; }
+  .spacer { flex: 1; }
+  .last-updated { color: var(--muted); font-size: 12px; }
+  .btn-refresh { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
+  .btn-refresh:hover { opacity: 0.85; }
+
+  main { display: grid; grid-template-columns: 260px 1fr; height: calc(100vh - 56px); }
+
+  /* ── Sidebar ── */
+  aside { background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 20px; }
+  .sidebar-section h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px; }
+
+  .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 2px; }
+  .stat-card .val { font-size: 24px; font-weight: 700; }
+  .stat-card .label { font-size: 11px; color: var(--muted); }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .tier-bar { display: flex; flex-direction: column; gap: 6px; }
+  .tier-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .tier-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .tier-count { margin-left: auto; font-weight: 600; }
+
+  .filter-group { display: flex; flex-direction: column; gap: 6px; }
+  .filter-group select, .filter-group input {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 7px 10px; font-size: 13px; width: 100%;
+  }
+  .filter-group select:focus, .filter-group input:focus { outline: none; border-color: var(--accent); }
+
+  /* ── Main content ── */
+  .content { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 2px; background: var(--surface); border-radius: 8px; padding: 4px; align-self: flex-start; }
+  .tab { padding: 7px 18px; border-radius: 6px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 500; }
+  .tab.active { background: var(--bg); color: var(--text); }
+
+  /* ── District Grid ── */
+  .district-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .district-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+    cursor: pointer; transition: border-color 0.15s, transform 0.1s;
+    position: relative; overflow: hidden;
+  }
+  .district-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .district-card .tier-stripe { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .tier-stripe.hot   { background: var(--hot); }
+  .tier-stripe.warm  { background: var(--warm); }
+  .tier-stripe.cold  { background: var(--cold); }
+  .tier-stripe.watch { background: var(--watch); }
+
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; margin-top: 4px; }
+  .card-header .name { font-weight: 600; font-size: 14px; line-height: 1.3; }
+  .card-header .location { font-size: 11px; color: var(--muted); }
+  .score-badge {
+    display: flex; flex-direction: column; align-items: center; background: var(--bg);
+    border-radius: 8px; padding: 6px 10px; min-width: 52px; flex-shrink: 0;
+  }
+  .score-badge .score-num { font-size: 20px; font-weight: 700; line-height: 1; }
+  .score-badge .score-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+
+  .card-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+  .pill.hot   { color: var(--hot);  border-color: var(--hot);  background: rgba(239,68,68,0.1); }
+  .pill.warm  { color: var(--warm); border-color: var(--warm); background: rgba(249,115,22,0.1); }
+  .pill.cold  { color: var(--cold); border-color: var(--cold); background: rgba(59,130,246,0.1); }
+
+  .signal-preview { font-size: 12px; color: var(--muted); line-height: 1.4; border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 10px; }
+
+  .card-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid var(--border); }
+  .signal-count { font-size: 12px; color: var(--muted); }
+  .action-badge { font-size: 11px; color: var(--green); font-weight: 500; }
+
+  /* ── Signal Feed ── */
+  .signal-feed { display: flex; flex-direction: column; gap: 8px; }
+  .signal-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px;
+    display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; align-items: start;
+  }
+  .signal-strength-ring {
+    display: flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; border-radius: 50%; border: 2px solid;
+    font-weight: 700; font-size: 16px;
+  }
+  .signal-item .sig-title { font-weight: 500; font-size: 13px; margin-bottom: 3px; }
+  .signal-item .sig-meta  { font-size: 11px; color: var(--muted); }
+  .signal-item .sig-summary { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.4; }
+  .source-badge { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; text-transform: uppercase; white-space: nowrap; }
+  .source-badge.youtube_board_meeting { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .source-badge.board_minutes { background: rgba(59,130,246,0.15); color: #3b82f6; }
+  .vertical-pill { display:inline-block; background:rgba(59,130,246,0.12); color:#3b82f6; border-radius:4px; padding:2px 7px; font-size:10px; font-weight:600; margin:2px 2px 2px 0; }
+  .customer-pill { display:inline-block; background:rgba(34,197,94,0.12); color:#22c55e; border-radius:4px; padding:2px 7px; font-size:10px; font-weight:600; margin:2px 2px 2px 0; }
+  .bm-card { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:10px; }
+  .bm-card:hover { border-color: var(--accent); }
+  .bm-header { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:6px; }
+  .bm-title { font-weight:600; font-size:13px; flex:1; line-height:1.4; }
+  .bm-meta { font-size:11px; color:var(--muted); margin-bottom:8px; }
+  .bm-summary { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:8px; border-left:2px solid var(--border); padding-left:8px; }
+  .bm-pills { display:flex; flex-wrap:wrap; gap:2px; }
+  .bm-section-label { font-size:10px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; margin-top:6px; }
+  .source-badge.bond_measure          { background: rgba(249,115,22,0.15); color: #f97316; }
+  .source-badge.lcap_filing           { background: rgba(99,102,241,0.15); color: #818cf8; }
+  .source-badge.leadership_change     { background: rgba(34,197,94,0.15);  color: #22c55e; }
+  .source-badge.news_mention          { background: rgba(148,163,184,0.15); color: #94a3b8; }
+  .source-badge.news                  { background: rgba(148,163,184,0.15); color: #94a3b8; }
+  .source-badge.manual                { background: rgba(148,163,184,0.15); color: #94a3b8; }
+
+  /* ── District Detail Panel ── */
+  #detailOverlay { padding: 0; border: none; border-radius: 12px; background: transparent; overflow: visible; }
+  #detailOverlay::backdrop { background: rgba(0,0,0,0.65); }
+  .detail-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    width: min(820px, 95vw); max-height: 88vh; overflow-y: auto; padding: 28px; position: relative;
+  }
+  .detail-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 20px; line-height: 1; }
+  .detail-close:hover { color: var(--text); }
+
+  /* Detail header */
+  .detail-header { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .detail-header h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .detail-header .detail-meta { color: var(--muted); font-size: 13px; }
+  .detail-score-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .detail-score-big { font-size: 32px; font-weight: 800; }
+  .detail-tier-pill { padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+  .detail-tier-pill.hot  { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.4); }
+  .detail-tier-pill.warm { background: rgba(249,115,22,0.15); color: #f97316; border: 1px solid rgba(249,115,22,0.4); }
+  .detail-tier-pill.cold { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.4); }
+  .detail-tier-pill.watch { background: rgba(107,114,128,0.15); color: #6b7280; border: 1px solid rgba(107,114,128,0.4); }
+
+  /* Detail sections */
+  .detail-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .detail-section { background: var(--bg); border-radius: 8px; padding: 14px; }
+  .detail-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 10px; font-weight: 600; }
+  .detail-kv { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .detail-kv:last-child { border-bottom: none; }
+  .detail-kv .key { color: var(--muted); }
+
+  /* Contacts */
+  .contact-row { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .contact-row:last-child { border-bottom: none; }
+  .contact-name { font-weight: 600; font-size: 13px; }
+  .contact-role { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .contact-email-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .contact-email { font-size: 11px; color: var(--muted); }
+  .btn-copy { font-size: 10px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+  .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-outreach { font-size: 10px; background: var(--accent); color: white; border-radius: 4px; padding: 2px 10px; text-decoration: none; display: inline-block; }
+  .btn-outreach:hover { opacity: 0.85; }
+
+  /* Intelligence feed */
+  .intel-item { background: var(--surface); border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .intel-item:last-child { margin-bottom: 0; }
+  .intel-body { flex: 1; min-width: 0; }
+  .intel-role { font-size: 11px; color: var(--muted); }
+  .intel-headline { font-size: 12px; color: var(--text); margin-top: 3px; line-height: 1.4; }
+  .intel-note { font-size: 11px; color: #818cf8; margin-top: 3px; }
+  .btn-read { font-size: 10px; color: var(--muted); text-decoration: none; border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; white-space: nowrap; flex-shrink: 0; }
+  .btn-read:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Signal cards in detail */
+  .signal-card { background: var(--bg); border-radius: 6px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--border); }
+  .signal-card:last-child { margin-bottom: 0; }
+  .signal-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+  .signal-card-title { font-weight: 600; font-size: 12px; flex: 1; line-height: 1.4; }
+  .signal-card-badges { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+  .signal-card-meta { font-size: 11px; color: var(--muted); }
+  .signal-card-summary { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+
+  /* Bond section */
+  .bond-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .bond-row:last-child { border-bottom: none; }
+  .bond-name { color: var(--muted); font-size: 12px; }
+  .bond-val { font-size: 12px; }
+
+  /* Loading / empty */
+  .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: var(--muted); gap: 10px; }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { text-align: center; padding: 60px; color: var(--muted); }
+
+  .chart-container { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .chart-container h3 { font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+
+  /* Section divider in detail */
+  .detail-divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .detail-full-section { margin-bottom: 16px; }
+  .detail-full-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 10px; font-weight: 600; }
+
+  /* Why Act Now bullets */
+  .why-list { list-style: none; padding: 0; margin: 0; }
+  .why-list li { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; line-height: 1.4; }
+  .why-list li:last-child { border-bottom: none; }
+  .why-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+
+  /* Recent Activity feed */
+  .activity-feed { display: flex; flex-direction: column; gap: 0; }
+  .activity-item { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; margin-top: 1px; }
+  .activity-badge.board_minutes, .activity-badge.transcript { background: rgba(99,102,241,0.15); color: #818cf8; }
+  .activity-badge.news, .activity-badge.news_mention { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .activity-badge.lcap_filing { background: rgba(249,115,22,0.15); color: #f97316; }
+  .activity-badge.bond_measure { background: rgba(59,130,246,0.15); color: #3b82f6; }
+  .activity-badge.leadership_change { background: rgba(168,85,247,0.15); color: #a855f7; }
+  .activity-date { font-size: 11px; color: var(--muted); flex-shrink: 0; padding-top: 2px; min-width: 52px; }
+  .activity-text { font-size: 12px; color: var(--text); line-height: 1.4; flex: 1; min-width: 0; }
+  .activity-link { font-size: 10px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; text-decoration: none; flex-shrink: 0; margin-top: 1px; }
+  .activity-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* Compact contact row */
+  .contact-compact { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .contact-compact:last-child { border-bottom: none; }
+  .contact-compact .cname { font-weight: 600; font-size: 12px; }
+  .contact-compact .crole { font-size: 11px; color: var(--muted); flex: 1; min-width: 80px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div>
+      <h1>🏫 District Intelligence Platform</h1>
+      <div class="subtitle">Instructional Audio Sales Intelligence</div>
+    </div>
+    <div class="spacer"></div>
+    <span class="last-updated" id="lastUpdated">–</span>
+    <button class="btn-refresh" onclick="loadAll()">↻ Refresh</button>
+  </header>
+
+  <main>
+    <aside>
+      <div id="configSection" class="sidebar-section">
+        <h3>Supabase Connection</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input id="sbUrl" type="text" placeholder="https://xxx.supabase.co" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:12px;font-family:monospace;">
+          <input id="sbKey" type="password" placeholder="anon key" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:12px;font-family:monospace;">
+          <button onclick="saveConfig()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px;cursor:pointer;font-size:13px;">Connect</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Overview</h3>
+        <div class="stats-grid">
+          <div class="stat-card"><span class="val" id="statTotal">–</span><span class="label">Districts</span></div>
+          <div class="stat-card"><span class="val" id="statSignals">–</span><span class="label">Signals</span></div>
+          <div class="stat-card"><span class="val" id="statHot">–</span><span class="label">Hot</span></div>
+          <div class="stat-card"><span class="val" id="statActionable">–</span><span class="label">Actionable</span></div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>By Tier</h3>
+        <div class="tier-bar">
+          <div class="tier-row"><span class="tier-dot" style="background:var(--hot)"></span>Hot <span class="tier-count" id="tc-hot">–</span></div>
+          <div class="tier-row"><span class="tier-dot" style="background:var(--warm)"></span>Warm <span class="tier-count" id="tc-warm">–</span></div>
+          <div class="tier-row"><span class="tier-dot" style="background:var(--cold)"></span>Cold <span class="tier-count" id="tc-cold">–</span></div>
+          <div class="tier-row"><span class="tier-dot" style="background:var(--watch)"></span>Watch <span class="tier-count" id="tc-watch">–</span></div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Filters</h3>
+        <div class="filter-group">
+          <select id="filterTier" onchange="applyFilters()">
+            <option value="">All Tiers</option>
+            <option value="hot">Hot</option>
+            <option value="warm">Warm</option>
+            <option value="cold">Cold</option>
+            <option value="watch">Watch</option>
+          </select>
+          <select id="filterState" onchange="applyFilters()">
+            <option value="">All States</option>
+          </select>
+          <select id="filterSource" onchange="applyFilters()">
+            <option value="">All Signal Types</option>
+            <option value="board_minutes">Board Minutes</option>
+            <option value="youtube_board_meeting">Board Meeting (Video)</option>
+            <option value="bond_measure">Bond Measure</option>
+            <option value="lcap_filing">LCAP Filing</option>
+            <option value="leadership_change">Leadership Change</option>
+          </select>
+          <input id="filterSearch" type="text" placeholder="Search districts..." oninput="applyFilters()">
+        </div>
+      </div>
+    </aside>
+
+    <div class="content">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('districts', this)">Districts</button>
+        <button class="tab" onclick="switchTab('boardmeetings', this)">Board Meetings</button>
+        <button class="tab" onclick="switchTab('signals', this)">Signal Feed</button>
+        <button class="tab" onclick="switchTab('analytics', this)">Analytics</button>
+      </div>
+
+      <div id="tab-districts">
+        <div id="districtsGrid" class="district-grid">
+          <div class="loading"><div class="spinner"></div> Connecting to Supabase...</div>
+        </div>
+      </div>
+
+      <div id="tab-boardmeetings" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:13px;color:var(--muted);">Board meeting intelligence — scored by vertical match and customer fit</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="bmFilterCustomer" onchange="renderBoardMeetings()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px;">
+              <option value="">All Customers</option>
+            </select>
+            <select id="bmFilterVertical" onchange="renderBoardMeetings()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px;">
+              <option value="">All Verticals</option>
+            </select>
+          </div>
+        </div>
+        <div id="boardMeetingsFeed"></div>
+      </div>
+
+      <div id="tab-signals" style="display:none;">
+        <div id="signalFeed" class="signal-feed">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <div id="tab-analytics" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="chart-container">
+            <h3>Opportunity Score Distribution</h3>
+            <canvas id="scoreChart" height="200"></canvas>
+          </div>
+          <div class="chart-container">
+            <h3>Signals by Source Type</h3>
+            <canvas id="sourceChart" height="200"></canvas>
+          </div>
+          <div class="chart-container" style="grid-column:1/-1;">
+            <h3>Top Districts by Signal Strength</h3>
+            <canvas id="districtChart" height="120"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Detail dialog (top-layer modal) -->
+<dialog id="detailOverlay" onclick="closeDetail(event)">
+  <div class="detail-panel" id="detailPanel">
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+    <div id="detailContent"></div>
+  </div>
+</dialog>
+
+<script>
+// ── Helpers ────────────────────────────────────────────────────────────────
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function sourceLabel(type) {
+  return {
+    board_minutes:         'Board Minutes',
+    youtube_board_meeting: 'Board Mtg',
+    bond_measure: 'Bond',
+    lcap_filing: 'LCAP',
+    leadership_change: 'Leadership',
+    news_mention: 'News',
+    news: 'News',
+    manual: 'Manual'
+  }[type] || (type || '').replace(/_/g,' ');
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return 'never';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const d = Math.floor(diff / 86400000);
+  if (d === 0) return 'today';
+  if (d < 7) return `${d}d ago`;
+  if (d < 30) return `${Math.floor(d/7)}w ago`;
+  if (d < 365) return `${Math.floor(d/30)}mo ago`;
+  return `${Math.floor(d/365)}y ago`;
+}
+
+function tierColor(tier) {
+  return { hot:'var(--hot)', warm:'var(--warm)', cold:'var(--cold)', watch:'var(--watch)' }[tier] || 'var(--muted)';
+}
+
+function strengthColor(s) {
+  return s >= 8 ? 'var(--hot)' : s >= 5 ? 'var(--warm)' : 'var(--cold)';
+}
+
+function scoreColor(score) {
+  return score >= 70 ? 'var(--hot)' : score >= 40 ? 'var(--warm)' : score >= 20 ? 'var(--cold)' : 'var(--muted)';
+}
+
+// ── State ──────────────────────────────────────────────────────────────────
+let SUPABASE_URL = localStorage.getItem('dip_url') || '';
+let SUPABASE_KEY = localStorage.getItem('dip_key') || '';
+let allDistricts = [];
+let allSignals   = [];
+let charts       = {};
+
+// ── Config ─────────────────────────────────────────────────────────────────
+function saveConfig() {
+  SUPABASE_URL = document.getElementById('sbUrl').value.trim().replace(/\/$/, '');
+  SUPABASE_KEY = document.getElementById('sbKey').value.trim();
+  localStorage.setItem('dip_url', SUPABASE_URL);
+  localStorage.setItem('dip_key', SUPABASE_KEY);
+  loadAll();
+}
+
+if (SUPABASE_URL) {
+  document.getElementById('sbUrl').value = SUPABASE_URL;
+  document.getElementById('sbKey').value = '••••••••••••';
+}
+
+// ── Supabase REST helper ───────────────────────────────────────────────────
+async function supaFetch(path, params = {}) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  const url = new URL(`${SUPABASE_URL}/rest/v1/${path}`);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const resp = await fetch(url, {
+    headers: {
+      'apikey':        SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Accept':        'application/json',
+      'Range':         '0-499',
+    }
+  });
+  if (!resp.ok) throw new Error(`${resp.status} ${await resp.text()}`);
+  return resp.json();
+}
+
+// ── Load all data ──────────────────────────────────────────────────────────
+async function loadAll() {
+  document.getElementById('lastUpdated').textContent = 'Loading...';
+  try {
+    const [districts, signals] = await Promise.all([
+      supaFetch('v_district_opportunities', { order: 'opportunity_score.desc' }),
+      supaFetch('signals', { order: 'source_date.desc,signal_strength.desc', select: '*,districts(name,state,id)' }),
+    ]);
+    allDistricts = districts;
+    allSignals   = signals;
+    updateStats();
+    applyFilters();
+    renderSignals(signals);
+    renderBoardMeetings();
+    renderAnalytics();
+    populateStateFilter();
+    populateBoardMeetingFilters();
+    document.getElementById('lastUpdated').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+  } catch (err) {
+    console.error(err);
+    document.getElementById('districtsGrid').innerHTML = `
+      <div class="empty" style="grid-column:1/-1;">
+        <p style="font-size:16px;margin-bottom:8px;">⚡ Connect your Supabase project</p>
+        <p>Enter your Supabase URL and anon key in the sidebar to get started.</p>
+      </div>`;
+    document.getElementById('lastUpdated').textContent = 'Not connected';
+  }
+}
+
+// ── Stats ──────────────────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('statTotal').textContent     = allDistricts.length;
+  document.getElementById('statSignals').textContent   = allSignals.length;
+  document.getElementById('statHot').textContent       = allDistricts.filter(d => d.tier === 'hot').length;
+  document.getElementById('statActionable').textContent = allSignals.filter(s => s.is_actionable).length;
+  ['hot','warm','cold','watch'].forEach(t => {
+    document.getElementById(`tc-${t}`).textContent = allDistricts.filter(d => d.tier === t).length;
+  });
+}
+
+// ── Filters ────────────────────────────────────────────────────────────────
+function populateStateFilter() {
+  const states = [...new Set(allDistricts.map(d => d.state).filter(Boolean))].sort();
+  const sel = document.getElementById('filterState');
+  sel.innerHTML = '<option value="">All States</option>';
+  states.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = s;
+    sel.appendChild(o);
+  });
+}
+
+function applyFilters() {
+  const tier   = document.getElementById('filterTier').value;
+  const state  = document.getElementById('filterState').value;
+  const search = document.getElementById('filterSearch').value.toLowerCase();
+  let filtered = allDistricts;
+  if (tier)   filtered = filtered.filter(d => d.tier === tier);
+  if (state)  filtered = filtered.filter(d => d.state === state);
+  if (search) filtered = filtered.filter(d =>
+    (d.name||'').toLowerCase().includes(search) || (d.city||'').toLowerCase().includes(search)
+  );
+  renderDistricts(filtered);
+}
+
+// ── Render Districts ───────────────────────────────────────────────────────
+function renderDistricts(districts) {
+  const grid = document.getElementById('districtsGrid');
+  if (!districts.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">No districts match your filters.</div>';
+    return;
+  }
+  grid.innerHTML = districts.map(d => {
+    const idx = allDistricts.indexOf(d);
+    const sColor = scoreColor(d.opportunity_score || 0);
+    return `
+    <div class="district-card" data-idx="${idx}" onclick="openDetail(parseInt(this.dataset.idx))">
+      <div class="tier-stripe ${d.tier || 'watch'}"></div>
+      <div class="card-header">
+        <div>
+          <div class="name">${esc(d.name)}</div>
+          <div class="location">${d.city ? esc(d.city)+', ' : ''}${esc(d.state)} · ${(d.enrollment||0).toLocaleString()} students</div>
+        </div>
+        <div class="score-badge">
+          <span class="score-num" style="color:${sColor}">${d.opportunity_score || 0}</span>
+          <span class="score-label">Score</span>
+        </div>
+      </div>
+      <div class="card-meta">
+        <span class="pill ${d.tier || 'watch'}">${(d.tier||'watch').toUpperCase()}</span>
+        ${d.active_bonds > 0 ? `<span class="pill">🏛 ${d.active_bonds} Bond${d.active_bonds>1?'s':''}</span>` : ''}
+        ${d.leadership_changes_1yr > 0 ? '<span class="pill">👤 Leader Change</span>' : ''}
+        ${d.lcap_count > 0 ? '<span class="pill">📋 LCAP</span>' : ''}
+      </div>
+      ${d.top_signal_title ? `<div class="signal-preview">${esc(d.top_signal_title)}</div>` : ''}
+      <div class="card-footer">
+        <span class="signal-count">${d.signal_count || 0} signals · last ${timeAgo(d.last_signal_date)}</span>
+        ${d.signal_count > 0 ? '<span class="action-badge">● Active</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render Signals Feed ────────────────────────────────────────────────────
+function renderSignals(signals) {
+  const feed = document.getElementById('signalFeed');
+  if (!signals.length) {
+    feed.innerHTML = '<div class="empty">No signals yet. Run the collectors to gather intelligence.</div>';
+    return;
+  }
+  feed.innerHTML = signals.slice(0, 50).map(s => {
+    const strength = s.signal_strength || 1;
+    const sColor = strengthColor(strength);
+    return `
+    <div class="signal-item">
+      <div class="signal-strength-ring" style="border-color:${sColor};color:${sColor}">${strength}</div>
+      <div>
+        <div class="sig-title">${esc(s.districts?.name || '–')} — ${esc(s.title || 'Signal')}</div>
+        <div class="sig-meta">${esc(s.source_date || '')} · ${esc(sourceLabel(s.source_type))}</div>
+        ${s.summary ? `<div class="sig-summary">${esc(s.summary)}</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <span class="source-badge ${s.source_type || ''}">${sourceLabel(s.source_type)}</span>
+        ${s.is_actionable ? '<span style="font-size:10px;color:var(--green);font-weight:600;">ACTIONABLE</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Board Meetings Feed ────────────────────────────────────────────────────
+function populateBoardMeetingFilters() {
+  const bmSignals = allSignals.filter(s => s.source_type === 'board_minutes');
+
+  // Collect unique customers and verticals from JSON fields
+  const customers = new Set();
+  const verticals = new Set();
+  bmSignals.forEach(s => {
+    try {
+      const cas = typeof s.customer_alerts === 'string' ? JSON.parse(s.customer_alerts) : (s.customer_alerts || []);
+      cas.forEach(c => { if (c.label) customers.add(c.label); });
+    } catch(e) {}
+    try {
+      const tvs = typeof s.top_verticals === 'string' ? JSON.parse(s.top_verticals) : (s.top_verticals || []);
+      tvs.forEach(v => { if (v.label) verticals.add(v.label); });
+    } catch(e) {}
+  });
+
+  const cSel = document.getElementById('bmFilterCustomer');
+  const vSel = document.getElementById('bmFilterVertical');
+  [...customers].sort().forEach(c => {
+    const o = document.createElement('option'); o.value = c; o.textContent = c; cSel.appendChild(o);
+  });
+  [...verticals].sort().forEach(v => {
+    const o = document.createElement('option'); o.value = v; o.textContent = v; vSel.appendChild(o);
+  });
+}
+
+function renderBoardMeetings() {
+  const feed = document.getElementById('boardMeetingsFeed');
+  if (!feed) return;
+
+  const filterCustomer = (document.getElementById('bmFilterCustomer')?.value || '').toLowerCase();
+  const filterVertical = (document.getElementById('bmFilterVertical')?.value || '').toLowerCase();
+
+  let bmSignals = allSignals.filter(s => s.source_type === 'board_minutes');
+
+  // Parse JSON fields
+  bmSignals = bmSignals.map(s => ({
+    ...s,
+    _cas: (() => { try { return typeof s.customer_alerts === 'string' ? JSON.parse(s.customer_alerts) : (s.customer_alerts || []); } catch(e) { return []; } })(),
+    _tvs: (() => { try { return typeof s.top_verticals === 'string' ? JSON.parse(s.top_verticals) : (s.top_verticals || []); } catch(e) { return []; } })(),
+  }));
+
+  // Apply filters
+  if (filterCustomer) bmSignals = bmSignals.filter(s => s._cas.some(c => (c.label||'').toLowerCase() === filterCustomer));
+  if (filterVertical) bmSignals = bmSignals.filter(s => s._tvs.some(v => (v.label||'').toLowerCase() === filterVertical));
+
+  if (!bmSignals.length) {
+    feed.innerHTML = '<div class="empty">No board meeting signals yet. Run board_scraper.py to collect minutes.</div>';
+    return;
+  }
+
+  feed.innerHTML = bmSignals.slice(0, 60).map(s => {
+    const strength = s.signal_strength || 1;
+    const sColor   = strengthColor(strength);
+    const cas = s._cas;
+    const tvs = s._tvs;
+
+    const customerPills = cas.slice(0, 6).map(c =>
+      `<span class="customer-pill" title="Score: ${c.combined_score || ''}">${esc(c.label || '')}</span>`
+    ).join('');
+    const verticalPills = tvs.slice(0, 5).map(v =>
+      `<span class="vertical-pill" title="Score: ${v.score || ''}">${esc(v.label || '')}</span>`
+    ).join('');
+
+    return `
+    <div class="bm-card">
+      <div class="bm-header">
+        <div class="bm-title">${esc(s.districts?.name || '–')} — ${esc(s.title || 'Board Minutes')}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+          <div class="signal-strength-ring" style="border-color:${sColor};color:${sColor};width:28px;height:28px;font-size:11px;">${strength}</div>
+          ${s.is_actionable ? '<span style="font-size:10px;color:var(--green);font-weight:600;">ACTIONABLE</span>' : ''}
+        </div>
+      </div>
+      <div class="bm-meta">${esc(s.source_date || '')} · ${esc(s.districts?.state || '')} · <span class="source-badge board_minutes" style="font-size:10px;padding:1px 6px;">Board Minutes</span></div>
+      ${s.summary ? `<div class="bm-summary">${esc(s.summary)}</div>` : ''}
+      ${verticalPills ? `<div class="bm-section-label">Vertical Matches</div><div class="bm-pills">${verticalPills}</div>` : ''}
+      ${customerPills ? `<div class="bm-section-label">Customer Alerts</div><div class="bm-pills">${customerPills}</div>` : ''}
+      ${s.source_url ? `<div style="margin-top:8px;"><a href="${esc(s.source_url)}" target="_blank" style="font-size:11px;color:var(--accent);">View Source →</a></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── District Detail Panel ──────────────────────────────────────────────────
+async function openDetail(idx) {
+  try {
+    const district = allDistricts[idx];
+    if (!district) return;
+
+    const districtId = district.id || district.district_id || district.uuid || null;
+    const sc = scoreColor(district.opportunity_score || 0);
+
+    // Render header immediately — don't wait for Supabase
+    document.getElementById('detailContent').innerHTML =
+      buildDetailHeader(district, sc) +
+      '<div id="detailBody"><div class="loading"><div class="spinner"></div></div></div>';
+    const overlay = document.getElementById('detailOverlay');
+    if (!overlay.open) overlay.showModal();
+
+    // Pre-filter signals from already-loaded data
+    const districtSignals = allSignals.filter(s => {
+      if (districtId) {
+        const sId = s.district_id || s.districts?.id;
+        if (sId === districtId) return true;
+      }
+      return (s.districts?.name || '') === district.name;
+    }).slice(0, 8);
+
+    // Fetch enrichment concurrently
+    let bonds = [], leadership = [], boardMeetings = [];
+    try {
+      if (districtId) {
+        [bonds, leadership, boardMeetings] = await Promise.all([
+          supaFetch('bond_measures', { district_id: `eq.${districtId}`, order: 'election_date.desc' }),
+          supaFetch('leadership_changes', { district_id: `eq.${districtId}`, order: 'effective_date.desc' }),
+          supaFetch('board_meetings', {
+            district_id: `eq.${districtId}`,
+            order: 'meeting_date.desc',
+            select: 'id,meeting_date,document_type,title,summary,top_verticals,customer_alerts,source_url',
+          }).catch(() => []),
+        ]);
+      }
+    } catch(e) { console.warn('Detail fetch:', e); }
+
+    // Deduplicate contacts by person_name
+    const seen = new Set();
+    const contacts = leadership.filter(lc => {
+      if (!lc.person_name || lc.person_name === 'Unknown') return false;
+      if (seen.has(lc.person_name)) return false;
+      seen.add(lc.person_name);
+      return true;
+    });
+
+    const bodyEl = document.getElementById('detailBody');
+    if (bodyEl) bodyEl.innerHTML = buildDetailBody(district, districtSignals, bonds, contacts, boardMeetings);
+  } catch(err) { console.error('openDetail CRASHED:', err); }
+}
+
+function buildDetailHeader(district, sc) {
+  return `
+    <div class="detail-header">
+      <h2>${esc(district.name)}</h2>
+      <div class="detail-meta">${district.city ? esc(district.city)+', ' : ''}${esc(district.state)} · ${(district.enrollment||0).toLocaleString()} students · ${district.school_count||0} schools</div>
+      <div class="detail-score-row">
+        <span class="detail-score-big" style="color:${sc}">${district.opportunity_score || 0}</span>
+        <span style="color:var(--muted);font-size:13px;">/100</span>
+        <span class="detail-tier-pill ${district.tier || 'watch'}">${(district.tier||'watch').toUpperCase()}</span>
+        <span style="font-size:12px;color:var(--muted);">${district.signal_count || 0} signals · last ${timeAgo(district.last_signal_date)}</span>
+      </div>
+    </div>`;
+}
+
+function buildDetailBody(district, signals, bonds, contacts, boardMeetings) {
+  let html = '';
+
+  // ── Why Act Now ───────────────────────────────────────────────────────
+  const whyBullets = buildWhyBullets(district, signals, bonds);
+  if (whyBullets.length) {
+    html += '<div class="detail-full-section"><h4>Why Act Now</h4><ul class="why-list">';
+    whyBullets.forEach(({ text, color }) => {
+      html += `<li><span class="why-dot" style="background:${color}"></span><span>${esc(text)}</span></li>`;
+    });
+    html += '</ul></div>';
+  }
+
+  // ── Bond Intelligence ─────────────────────────────────────────────────
+  if (bonds.length) {
+    const plural = bonds.length > 1 ? ` <span style="color:var(--warm);font-size:10px;font-weight:500;">(${bonds.length} measures)</span>` : '';
+    html += `<div class="detail-full-section"><h4>Bond Intelligence${plural}</h4>`;
+    bonds.forEach((b, i) => {
+      const dim = i > 0 ? 'opacity:0.55;' : '';
+      const status = b.passed === true ? '✅' : b.passed === false ? '❌' : '⬜';
+      const amt = b.amount ? '$'+(b.amount/1e6).toFixed(1)+'M' : '?';
+      html += `<div class="bond-row" style="${dim}">
+        <span class="bond-name">${esc(b.measure_name||'Measure')} · ${esc(b.election_date||'?')}</span>
+        <span class="bond-val">${status} ${amt}${b.audio_visual_mentioned ? ' · AV ✓' : ''}</span>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // ── Recent Activity ───────────────────────────────────────────────────
+  html += '<div class="detail-full-section"><h4>Recent Activity</h4>';
+  const activityItems = [];
+
+  boardMeetings.forEach(bm => {
+    const excerpt = (bm.summary || bm.title || '').replace(/\n/g,' ').substring(0, 115);
+    activityItems.push({
+      date: bm.meeting_date,
+      type: bm.document_type || 'board_minutes',
+      label: bm.document_type === 'transcript' ? 'Transcript' : 'Board Minutes',
+      text: excerpt || 'Meeting on record',
+      url: bm.source_url,
+      alert: bm.customer_alerts && bm.customer_alerts.length > 0,
+    });
+  });
+
+  signals.forEach(s => {
+    // Skip duplicates already covered by boardMeetings
+    if (s.source_type === 'board_minutes' || s.source_type === 'youtube_board_meeting') return;
+    activityItems.push({
+      date: s.source_date,
+      type: s.source_type || 'news',
+      label: sourceLabel(s.source_type),
+      text: (s.title || s.summary || '').substring(0, 115),
+      url: s.source_url,
+      alert: s.is_actionable,
+    });
+  });
+
+  activityItems.sort((a, b) => new Date(b.date||0) - new Date(a.date||0));
+
+  if (!activityItems.length) {
+    html += '<div style="color:var(--muted);font-size:13px;padding:6px 0;">No recent activity. Run board scraper to enrich this district.</div>';
+  } else {
+    html += '<div class="activity-feed">';
+    activityItems.slice(0, 8).forEach(item => {
+      const badge = (item.type||'').replace(/[^a-z_]/g,'');
+      const dateStr = item.date ? new Date(item.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '–';
+      const alertDot = item.alert ? ' <span style="color:var(--hot);font-size:9px;">●</span>' : '';
+      html += `<div class="activity-item">
+        <span class="activity-badge ${badge}">${esc(item.label)}</span>
+        <span class="activity-date">${dateStr}</span>
+        <span class="activity-text">${esc(item.text)}${alertDot}</span>
+        ${item.url ? `<a class="activity-link" href="${esc(item.url)}" target="_blank">→</a>` : ''}
+      </div>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // ── Contacts ──────────────────────────────────────────────────────────
+  if (contacts.length) {
+    html += '<div class="detail-full-section"><h4>Contacts</h4>';
+    contacts.forEach(lc => {
+      const firstName = (lc.person_name || '').split(' ')[0];
+      const role = (lc.role || '').replace(/_/g, ' ');
+      const subject = encodeURIComponent(`${district.name} — Technology Infrastructure`);
+      const body = encodeURIComponent(
+        `Hi ${firstName},\n\nI wanted to reach out regarding technology infrastructure at ${district.name}. ` +
+        `We work with school districts to modernize instructional audio, intercom, and campus communication systems.\n\n` +
+        `I'd love to connect for a brief call.\n\nBest,\n[Your Name]`
+      );
+      html += `<div class="contact-compact">
+        <span class="cname">${esc(lc.person_name)}</span>
+        <span class="crole">${esc(role)}</span>`;
+      if (lc.email) {
+        html += `<button class="btn-copy" onclick="copyEmail(this,'${esc(lc.email)}')">📋</button>
+          <a class="btn-outreach" href="mailto:${esc(lc.email)}?subject=${subject}&body=${body}" target="_blank">✉️ Email</a>`;
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // ── All Signals (collapsible) ─────────────────────────────────────────
+  if (signals.length) {
+    html += `<div class="detail-full-section">
+      <h4 style="cursor:pointer;user-select:none;" onclick="toggleSignals(this)">
+        All Signals <span style="font-weight:400;font-size:10px;color:var(--muted);">(${signals.length}) ▸</span>
+      </h4>
+      <div id="allSignalsPanel" style="display:none;">`;
+    signals.forEach(s => {
+      const strength = s.signal_strength || 0;
+      const sColor = strengthColor(strength);
+      html += `<div class="signal-card">
+        <div class="signal-card-header">
+          <span class="signal-card-title">${esc(s.title || 'Signal')}</span>
+          <div class="signal-card-badges">
+            <span class="source-badge ${s.source_type||''}">${sourceLabel(s.source_type)}</span>
+            ${s.source_url ? `<a class="btn-read" href="${esc(s.source_url)}" target="_blank">Read →</a>` : ''}
+          </div>
+        </div>
+        <div class="signal-card-meta">
+          ${esc(s.source_date||'')} · Strength: <span style="color:${sColor};font-weight:600;">${strength}/10</span>
+          ${s.is_actionable ? ' · <span style="color:var(--green);font-weight:600;">✓ Actionable</span>' : ''}
+        </div>
+        ${s.summary ? `<div class="signal-card-summary">${esc(s.summary)}</div>` : ''}
+      </div>`;
+    });
+    html += '</div></div>';
+  }
+
+  return html;
+}
+
+function buildWhyBullets(district, signals, bonds) {
+  const bullets = [];
+  const HOT = '#ef4444', WARM = '#f97316', COLD = '#3b82f6';
+
+  // Bond signal
+  const activeBond = bonds.find(b => b.passed === true);
+  if (activeBond) {
+    const amt = activeBond.amount ? `$${(activeBond.amount/1e6).toFixed(0)}M bond` : 'Bond measure';
+    bullets.push({ text: `${amt} passed (${activeBond.election_date||'?'}) — active construction window${activeBond.audio_visual_mentioned ? ' · AV/tech mentioned' : ''}`, color: HOT });
+  } else if (bonds.length) {
+    bullets.push({ text: `Bond measure on record (${bonds[0].election_date||'?'}) — verify status before outreach`, color: WARM });
+  }
+
+  // Leadership churn
+  const lyrChanges = district.leadership_changes_1yr || 0;
+  if (lyrChanges > 0) {
+    bullets.push({ text: `${lyrChanges} leadership change${lyrChanges !== 1 ? 's' : ''} in past year — new decision makers evaluating vendors`, color: WARM });
+  }
+
+  // Top actionable signals
+  signals.filter(s => s.signal_strength >= 6).slice(0, 2).forEach(s => {
+    const text = (s.title || s.summary || '').substring(0, 100);
+    if (text) bullets.push({ text, color: s.signal_strength >= 8 ? HOT : WARM });
+  });
+
+  // Fallback: size + recency
+  if (bullets.length === 0) {
+    if (district.enrollment > 5000) bullets.push({ text: `${(district.enrollment).toLocaleString()} students across ${district.school_count||'?'} schools — significant infrastructure footprint`, color: COLD });
+    if (district.recent_signal_count > 0) bullets.push({ text: `${district.recent_signal_count} new signal${district.recent_signal_count !== 1 ? 's' : ''} in last 90 days`, color: COLD });
+  }
+
+  return bullets.slice(0, 4);
+}
+
+function toggleSignals(hdr) {
+  const panel = document.getElementById('allSignalsPanel');
+  if (!panel) return;
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? 'block' : 'none';
+  const tag = hdr.querySelector('span');
+  if (tag) tag.textContent = isHidden ? '▴' : `(${panel.querySelectorAll('.signal-card').length}) ▸`;
+}
+
+function copyEmail(btn, email) {
+  navigator.clipboard.writeText(email).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+  });
+}
+
+function closeDetail(event) {
+  if (!event || event.target === document.getElementById('detailOverlay')) {
+    const overlay = document.getElementById('detailOverlay');
+    if (overlay.open) overlay.close();
+  }
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  ['districts','boardmeetings','signals','analytics'].forEach(t => {
+    document.getElementById(`tab-${t}`).style.display = t === name ? 'block' : 'none';
+  });
+  if (name === 'analytics') renderAnalytics();
+}
+
+// ── Analytics Charts ───────────────────────────────────────────────────────
+function renderAnalytics() {
+  const bins = { '0-19': 0, '20-39': 0, '40-59': 0, '60-79': 0, '80-100': 0 };
+  allDistricts.forEach(d => {
+    const s = d.opportunity_score || 0;
+    if (s < 20) bins['0-19']++;
+    else if (s < 40) bins['20-39']++;
+    else if (s < 60) bins['40-59']++;
+    else if (s < 80) bins['60-79']++;
+    else bins['80-100']++;
+  });
+  renderChart('scoreChart', 'bar', {
+    labels: Object.keys(bins),
+    datasets: [{ data: Object.values(bins), backgroundColor: ['#6b7280','#3b82f6','#f97316','#ef4444','#dc2626'], borderRadius: 4, borderSkipped: false }]
+  });
+
+  const sourceCounts = {};
+  allSignals.forEach(s => { sourceCounts[s.source_type] = (sourceCounts[s.source_type]||0)+1; });
+  const sourceColors = { board_minutes:'#3b82f6', youtube_board_meeting:'#ef4444', bond_measure:'#f97316', lcap_filing:'#818cf8', leadership_change:'#22c55e', news_mention:'#94a3b8', news:'#94a3b8', manual:'#64748b' };
+  renderChart('sourceChart', 'doughnut', {
+    labels: Object.keys(sourceCounts).map(k => sourceLabel(k)),
+    datasets: [{ data: Object.values(sourceCounts), backgroundColor: Object.keys(sourceCounts).map(k => sourceColors[k]||'#64748b'), borderWidth: 0 }]
+  });
+
+  const top10 = [...allDistricts].sort((a,b)=>(b.signal_count||0)-(a.signal_count||0)).slice(0,10);
+  renderChart('districtChart', 'bar', {
+    labels: top10.map(d => (d.name||'').replace('Unified School District','USD').replace('Independent School District','ISD').replace('Public Schools','PS')),
+    datasets: [{ data: top10.map(d => d.signal_count||0), backgroundColor: '#6366f1', borderRadius: 4, borderSkipped: false, label: 'Signals' }]
+  }, { indexAxis: 'y' });
+}
+
+function renderChart(id, type, data, extraOpts={}) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, {
+    type, data,
+    options: {
+      responsive: true,
+      plugins: { legend: { display: type==='doughnut', labels: { color: '#64748b', font: { size: 11 } } } },
+      scales: type !== 'doughnut' ? {
+        x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: '#2a2d3a' } },
+        y: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: '#2a2d3a' } },
+      } : undefined,
+      ...extraOpts,
+    }
+  });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+if (SUPABASE_URL && SUPABASE_KEY) {
+  loadAll();
+} else {
+  document.getElementById('districtsGrid').innerHTML = `
+    <div class="empty" style="grid-column:1/-1;">
+      <p style="font-size:16px;margin-bottom:8px;">⚡ Connect Supabase to get started</p>
+      <p>Enter your Supabase URL and anon key in the sidebar.</p>
+    </div>`;
+}
+</script>
+</body>
+</html>
