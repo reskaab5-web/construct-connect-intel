@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>District Intelligence — Lightspeed Technologies Partnership</title>
+<style>
+  @page { size: letter; margin: 0; }
+  :root {
+    --accent: #4f46e5;
+    --accent-light: #e0e7ff;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --orange: #d97706;
+    --orange-light: #fef3c7;
+    --red: #dc2626;
+    --text: #111827;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --bg: #f9fafb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); background: #fff; font-size: 13px; line-height: 1.5; }
+  .page { max-width: 816px; margin: 0 auto; padding: 48px; }
+
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 3px solid var(--accent); }
+  .header-left h1 { font-size: 26px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+  .header-left .sub { font-size: 14px; color: var(--muted); margin-top: 4px; }
+  .header-right { text-align: right; }
+  .for-badge { background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 12px; border-radius: 4px; display: inline-block; }
+  .header-right .date { color: var(--muted); font-size: 12px; margin-top: 6px; }
+
+  /* Hero statement */
+  .hero-statement { background: linear-gradient(135deg, #eef2ff, #f0fdf4); border: 1px solid #c7d2fe; border-radius: 12px; padding: 24px; margin-bottom: 32px; }
+  .hero-statement h2 { font-size: 20px; font-weight: 800; color: var(--accent); margin-bottom: 8px; line-height: 1.3; }
+  .hero-statement p { color: #374151; font-size: 14px; }
+
+  /* Section headers */
+  h3 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--accent-light); }
+
+  /* Two column */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+
+  /* Stat box */
+  .stat-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+  .stat-box .num { font-size: 32px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+  .stat-box .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* Signal examples */
+  .signal-ex { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; }
+  .signal-ex:last-child { margin-bottom: 0; }
+  .sig-score { width: 40px; height: 40px; border-radius: 50%; border: 2px solid; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; flex-shrink: 0; }
+  .signal-ex h4 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .signal-ex p { font-size: 12px; color: var(--muted); }
+  .signal-ex .tag { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; margin-top: 4px; }
+
+  /* Pain / gain */
+  .pain-gain { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+  .pain { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; }
+  .gain { background: var(--green-light); border: 1px solid #a7f3d0; border-radius: 8px; padding: 16px; }
+  .pain h4 { color: var(--red); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .gain h4 { color: var(--green); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .pain ul, .gain ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .pain ul li::before { content: '✗ '; color: var(--red); font-weight: 700; }
+  .gain ul li::before { content: '✓ '; color: var(--green); font-weight: 700; }
+  .pain ul li, .gain ul li { font-size: 13px; }
+
+  /* Pricing */
+  .pricing-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .pricing-row:last-child { border-bottom: none; }
+  .pricing-row .plan { font-weight: 600; }
+  .pricing-row .coverage { color: var(--muted); font-size: 12px; }
+  .pricing-row .price { font-weight: 700; font-size: 15px; color: var(--accent); }
+
+  /* Timeline */
+  .timeline { display: flex; gap: 0; margin-bottom: 28px; }
+  .tl-step { flex: 1; position: relative; text-align: center; }
+  .tl-step::before { content: ''; position: absolute; top: 16px; left: 50%; right: -50%; height: 2px; background: var(--border); z-index: 0; }
+  .tl-step:last-child::before { display: none; }
+  .tl-dot { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; margin: 0 auto 8px; position: relative; z-index: 1; }
+  .tl-step h4 { font-size: 11px; font-weight: 700; }
+  .tl-step p { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  /* Footer */
+  .footer { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .footer p { font-size: 12px; color: var(--muted); }
+  .footer .contact { text-align: right; }
+  .footer .contact strong { color: var(--text); display: block; font-size: 13px; }
+  .footer .contact a { color: var(--accent); }
+
+  /* Print */
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>District Intelligence</h1>
+      <div class="sub">K-12 Sales Intelligence Platform · locallaunchmedia.com</div>
+    </div>
+    <div class="header-right">
+      <div class="for-badge">Prepared for Lightspeed Technologies</div>
+      <div class="date">June 2025 · Confidential</div>
+    </div>
+  </div>
+
+  <!-- Hero statement -->
+  <div class="hero-statement">
+    <h2>Know which districts are ready to buy instructional audio — 60 to 90 days before the purchase order.</h2>
+    <p>District Intelligence monitors 13,000+ US school districts through public board meetings, bond elections, LCAP filings, and leadership changes — surfacing the exact moment a district has budget, a pain point, and a decision-maker ready to act.</p>
+  </div>
+
+  <!-- Stats -->
+  <h3>The Market Opportunity</h3>
+  <div class="three-col" style="margin-bottom:28px;">
+    <div class="stat-box"><div class="num">$48B</div><div class="lbl">Active K-12 bond measures currently in execution</div></div>
+    <div class="stat-box"><div class="num">3,200+</div><div class="lbl">CA districts with annual LCAP technology budgets</div></div>
+    <div class="stat-box"><div class="num">~800</div><div class="lbl">Superintendent transitions in the US every year</div></div>
+  </div>
+
+  <!-- Pain vs Gain -->
+  <h3>The Problem We Solve</h3>
+  <div class="pain-gain">
+    <div class="pain">
+      <h4>Without District Intelligence</h4>
+      <ul>
+        <li>Learn about bond projects after bid day</li>
+        <li>Cold-calling districts with no buying signal</li>
+        <li>Miss leadership transitions until it's too late</li>
+        <li>No visibility into LCAP tech budgets</li>
+        <li>Competitors get there first</li>
+      </ul>
+    </div>
+    <div class="gain">
+      <h4>With District Intelligence</h4>
+      <ul>
+        <li>Bond passage alerts the day results are certified</li>
+        <li>Only call districts with verified signals</li>
+        <li>Leadership change alerts within 72 hours</li>
+        <li>LCAP tech goal extraction 12 months ahead</li>
+        <li>Consistent first-mover advantage</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Signal examples -->
+  <h3>Example Signals for Lightspeed — California Territory</h3>
+
+  <div class="signal-ex">
+    <div class="sig-score" style="border-color:#dc2626;color:#dc2626;">9</div>
+    <div>
+      <h4>Fresno Unified SD — LCAP 2024-25: Instructional audio systems for all classrooms, $2.1M allocated</h4>
+      <p>Goal 2, Action 4: "Purchase and install classroom audio enhancement systems in 68 priority schools. Budget: $2,100,000." Effective July 1, 2024.</p>
+      <span class="tag" style="background:#ede9fe;color:#7c3aed;">LCAP Filing · Strength 9/10 · ACTIONABLE</span>
+    </div>
+  </div>
+
+  <div class="signal-ex">
+    <div class="sig-score" style="border-color:#d97706;color:#d97706;">8</div>
+    <div>
+      <h4>Elk Grove USD — Measure M ($250M) passed — AV systems and classroom technology explicitly listed in project scope</h4>
+      <p>November 2024 election: 67.2% approval. Project scope includes "classroom audio systems, PA/intercom replacement, and instructional audio systems district-wide across 67 schools."</p>
+      <span class="tag" style="background:#fef3c7;color:#b45309;">Bond Measure · Strength 8/10 · ACTIONABLE</span>
+    </div>
+  </div>
+
+  <div class="signal-ex">
+    <div class="sig-score" style="border-color:#059669;color:#059669;">8</div>
+    <div>
+      <h4>San Diego USD — Board meeting (March 14) — Director of Special Ed: "Students with hearing loss cannot effectively use current classroom audio"</h4>
+      <p>Timestamp 1:24:33 — "We have 340 students with IEPs citing hearing impairment. Our current PA systems do not meet their needs. We need to bring a budget proposal to the board."</p>
+      <span class="tag" style="background:#d1fae5;color:#065f46;">Board Meeting · Strength 8/10 · ACTIONABLE</span>
+    </div>
+  </div>
+
+  <!-- How it works for Lightspeed -->
+  <h3 style="margin-top:28px;">Your Workflow with District Intelligence</h3>
+  <div class="timeline">
+    <div class="tl-step">
+      <div class="tl-dot">1</div>
+      <h4>Onboard</h4>
+      <p>Set your territory (states + enrollment floor)</p>
+    </div>
+    <div class="tl-step">
+      <div class="tl-dot">2</div>
+      <h4>Monitor</h4>
+      <p>Platform runs continuously in the background</p>
+    </div>
+    <div class="tl-step">
+      <div class="tl-dot">3</div>
+      <h4>Alert</h4>
+      <p>Score ≥70 triggers instant email + CRM push</p>
+    </div>
+    <div class="tl-step">
+      <div class="tl-dot">4</div>
+      <h4>Call</h4>
+      <p>Rep calls with specific, cited talking points</p>
+    </div>
+    <div class="tl-step">
+      <div class="tl-dot">5</div>
+      <h4>Close</h4>
+      <p>Win the deal before competitors have context</p>
+    </div>
+  </div>
+
+  <!-- Pricing for Lightspeed -->
+  <h3>Recommended Plan for Lightspeed</h3>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:28px;">
+    <div class="pricing-row">
+      <div><span class="plan">Starter — 1 State</span><br><span class="coverage">100 districts · CA only · Weekly digest</span></div>
+      <div class="price">$299/mo</div>
+    </div>
+    <div class="pricing-row">
+      <div><span class="plan">Growth — 5 States ⭐ Recommended</span><br><span class="coverage">500 districts · CA + TX + FL + IL + NY · Daily alerts · API</span></div>
+      <div class="price">$799/mo</div>
+    </div>
+    <div class="pricing-row">
+      <div><span class="plan">Enterprise — Nationwide</span><br><span class="coverage">Unlimited districts · All states · Salesforce sync · White-label</span></div>
+      <div class="price">$2,499/mo</div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:12px;">All plans include 14-day free trial. Enterprise includes CRM webhook integration with Salesforce or HubSpot.</p>
+  </div>
+
+  <!-- ROI calculation -->
+  <h3>ROI at a Glance</h3>
+  <div class="two-col" style="margin-bottom:28px;">
+    <div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:8px;padding:16px;">
+      <p style="font-size:12px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Growth Plan — One Deal Pays for 5 Years</p>
+      <table style="width:100%;font-size:13px;border-collapse:collapse;">
+        <tr><td style="padding:4px 0;color:var(--muted);">Plan cost</td><td style="text-align:right;font-weight:600;">$9,588/yr</td></tr>
+        <tr><td style="padding:4px 0;color:var(--muted);">Avg Lightspeed district deal</td><td style="text-align:right;font-weight:600;">~$25,000–$80,000</td></tr>
+        <tr><td style="padding:4px 0;color:var(--muted);">Deals needed to break even</td><td style="text-align:right;font-weight:600; color:var(--green);">1</td></tr>
+        <tr><td style="padding:4px 0;color:var(--muted);">Expected additional deals/yr</td><td style="text-align:right;font-weight:600; color:var(--green);">8–20</td></tr>
+      </table>
+    </div>
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;">
+      <p style="font-size:12px;color:#1d4ed8;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">What the Data Shows</p>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;font-size:13px;">
+        <li>📋 Every CA district LCAP filed annually — we read all of them</li>
+        <li>🏛️ $48B in active bonds in execution right now</li>
+        <li>👤 ~800 superintendent changes per year nationally</li>
+        <li>⏱️ 60–90 day average lead time advantage over cold prospecting</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Next steps -->
+  <div style="background:linear-gradient(135deg,#eef2ff,#ede9fe);border:1px solid #c7d2fe;border-radius:8px;padding:20px;">
+    <h3 style="border:none;padding:0;margin-bottom:12px;">Proposed Next Steps</h3>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:180px;">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px;">Week 1</div>
+        <p style="font-size:12px;">30-minute live demo with California district data — we'll show signals from districts in your current pipeline.</p>
+      </div>
+      <div style="flex:1;min-width:180px;">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px;">Week 2–3</div>
+        <p style="font-size:12px;">14-day trial with your sales team — Growth plan, 5-state territory, real data running live.</p>
+      </div>
+      <div style="flex:1;min-width:180px;">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px;">Week 4</div>
+        <p style="font-size:12px;">Review first signals, CRM integration call, and subscribe to Enterprise if Salesforce sync is needed.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>District Intelligence · locallaunchmedia.com · © 2025 Local Launch Media</p>
+    <div class="contact">
+      <strong>Ron Sams · Local Launch Media</strong>
+      <a href="mailto:ron.sams@locallaunchmedia.com">ron.sams@locallaunchmedia.com</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

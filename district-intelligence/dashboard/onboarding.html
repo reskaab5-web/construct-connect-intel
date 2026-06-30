@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get Started — District Intelligence</title>
+<script src="vertical-library.js"></script>
+<style>
+  :root {
+    --bg:      #0a0d14;
+    --surface: #111827;
+    --surface2:#1f2937;
+    --border:  #1f2937;
+    --text:    #f9fafb;
+    --muted:   #9ca3af;
+    --accent:  #6366f1;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+
+  /* ── Progress bar ── */
+  .progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: var(--border); z-index: 100; }
+  .progress-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
+
+  /* ── Header ── */
+  header { padding: 24px; text-align: center; width: 100%; }
+  .logo { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+  .logo span { color: #818cf8; }
+
+  /* ── Steps ── */
+  .step { display: none; width: 100%; max-width: 860px; padding: 0 24px 80px; }
+  .step.active { display: block; }
+
+  .step-label { text-align: center; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 12px; }
+  .step h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 800; text-align: center; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .step .sub { text-align: center; color: var(--muted); font-size: 16px; max-width: 540px; margin: 0 auto 40px; }
+
+  /* ── Vertical grid ── */
+  .vertical-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-bottom: 32px; }
+  .vert-card {
+    background: var(--surface); border: 2px solid var(--border); border-radius: 14px; padding: 20px;
+    cursor: pointer; transition: border-color 0.15s, transform 0.1s, background 0.15s;
+    position: relative; text-align: left;
+  }
+  .vert-card:hover { border-color: rgba(99,102,241,0.5); transform: translateY(-2px); }
+  .vert-card.selected { background: rgba(99,102,241,0.08); }
+  .vert-card .check { position: absolute; top: 14px; right: 14px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; transition: all 0.15s; }
+  .vert-card.selected .check { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .vert-icon { font-size: 28px; margin-bottom: 10px; }
+  .vert-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .vert-tagline { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .vert-who { font-size: 11px; color: #6b7280; line-height: 1.4; }
+  .vert-meta { display: flex; gap: 10px; margin-top: 10px; }
+  .vert-pill { font-size: 10px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border); color: var(--muted); }
+
+  .custom-card { background: transparent; border: 2px dashed var(--border); }
+  .custom-card:hover { border-color: var(--accent); }
+
+  /* ── Intent preview ── */
+  .intent-preview { display: none; }
+  .intent-preview.show { display: block; }
+  .preview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .preview-header h3 { font-size: 16px; font-weight: 700; }
+  .preview-list { display: flex; flex-direction: column; gap: 8px; }
+  .preview-intent { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .preview-intent-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .preview-intent-icon { font-size: 20px; }
+  .preview-intent-name { font-weight: 600; font-size: 14px; flex: 1; }
+  .preview-weight { background: rgba(99,102,241,0.15); border-radius: 20px; padding: 2px 8px; font-size: 11px; color: #818cf8; font-weight: 600; }
+  .preview-keywords { display: flex; flex-wrap: wrap; gap: 6px; }
+  .kw-tag { background: var(--surface2); border-radius: 6px; padding: 3px 8px; font-size: 11px; color: var(--muted); }
+  .kw-weight { font-weight: 700; color: var(--text); margin-left: 2px; }
+
+  /* ── Step 2: customize note ── */
+  .custom-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+  .custom-section h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .custom-section p { font-size: 13px; color: var(--muted); }
+  .note-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-top: 12px; }
+  .note-box code { font-family: monospace; font-size: 12px; color: #a5b4fc; }
+
+  /* ── Territory step ── */
+  .state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-bottom: 24px; }
+  .state-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.12s; }
+  .state-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .state-btn.selected { background: rgba(99,102,241,0.15); border-color: var(--accent); color: #818cf8; font-weight: 700; }
+  .select-all-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .link-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 13px; }
+
+  /* ── Done step ── */
+  .done-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; text-align: center; max-width: 480px; margin: 0 auto 24px; }
+  .done-icon { font-size: 56px; margin-bottom: 16px; }
+  .done-card h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .done-card p { color: var(--muted); margin-bottom: 24px; }
+  .config-summary { background: var(--bg); border-radius: 10px; padding: 16px; text-align: left; margin-bottom: 24px; font-size: 13px; }
+  .config-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .config-row:last-child { border-bottom: none; }
+  .config-row .label { color: var(--muted); }
+  .config-row .value { font-weight: 600; }
+
+  /* ── Nav buttons ── */
+  .nav-row { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 50; }
+  .btn { padding: 10px 24px; border-radius: 10px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Misc ── */
+  .badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: #818cf8; margin-bottom: 16px; }
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:25%"></div></div>
+
+<header>
+  <div class="logo">District<span>Intel</span></div>
+</header>
+
+<!-- ══ STEP 1: Pick your vertical ══════════════════════════════════════════ -->
+<div class="step active" id="step1">
+  <div class="step-label">Step 1 of 3</div>
+  <h1>What do you sell to school districts?</h1>
+  <p class="sub">Pick the category that best describes your business. We'll load a starter set of buying triggers and keywords — you can customize everything after.</p>
+
+  <div class="vertical-grid" id="verticalGrid"></div>
+
+  <div id="intentPreview" class="intent-preview">
+    <div class="preview-header">
+      <h3 id="previewTitle">Buying triggers we'll start with</h3>
+      <span style="font-size:12px;color:var(--muted);">You can edit all of these after setup</span>
+    </div>
+    <div class="preview-list" id="previewList"></div>
+  </div>
+</div>
+
+<!-- ══ STEP 2: Territory ════════════════════════════════════════════════════ -->
+<div class="step" id="step2">
+  <div class="step-label">Step 2 of 3</div>
+  <h1>Which states do you sell into?</h1>
+  <p class="sub">We'll focus monitoring on districts in your territory. You can add or remove states anytime.</p>
+
+  <div class="select-all-row">
+    <button class="link-btn" onclick="selectAllStates()">Select all</button>
+    <button class="link-btn" onclick="clearStates()">Clear</button>
+  </div>
+
+  <div class="state-grid" id="stateGrid"></div>
+
+  <div class="custom-section">
+    <h3>Enrollment filter</h3>
+    <p>Only monitor districts above a minimum enrollment size. Smaller districts rarely have budget for large projects.</p>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
+      <input type="range" id="enrollmentSlider" min="0" max="20000" step="500" value="2500" oninput="updateEnrollment(this.value)" style="flex:1;">
+      <span id="enrollmentVal" style="font-weight:700;min-width:80px;">2,500+</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STEP 3: Done ═════════════════════════════════════════════════════════ -->
+<div class="step" id="step3">
+  <div class="step-label">Step 3 of 3</div>
+
+  <div class="done-card">
+    <div class="done-icon">🚀</div>
+    <h2>You're ready to go</h2>
+    <p>Your District Intelligence account is configured. Here's a summary of what we'll monitor:</p>
+
+    <div class="config-summary" id="configSummary"></div>
+
+    <button class="btn btn-primary" style="width:100%;padding:14px;" onclick="launchDashboard()">Open Your Dashboard →</button>
+  </div>
+
+  <div style="max-width:480px;margin:0 auto;">
+    <div class="custom-section">
+      <h3>💡 Pro tip: add industry-specific keywords</h3>
+      <p>The starter template is broad. After you see your first signals, go to <strong>Settings → Signal Configuration</strong> and tune your keywords based on what's actually triggering real opportunities in your pipeline.</p>
+      <div class="note-box">
+        <p style="font-size:12px;color:var(--muted);">Example for geotechnical firms — add under "Active RFP or bid opportunity":</p>
+        <code>soil report · site assessment · geotechnical investigation · grading permit · DSA soils · environmental study</code>
+      </div>
+    </div>
+
+    <div class="custom-section" style="margin-top:12px;">
+      <h3>📅 Weekly digest emails</h3>
+      <p>Every Monday morning we'll send a digest of new signals and hot districts in your territory. Check your inbox — the first one arrives within 24 hours.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Nav -->
+<div class="nav-row">
+  <button class="btn btn-ghost" id="backBtn" onclick="goBack()" style="visibility:hidden;">← Back</button>
+  <div style="font-size:13px;color:var(--muted);" id="stepCounter">Step 1 of 3</div>
+  <button class="btn btn-primary" id="nextBtn" onclick="goNext()" disabled>Next →</button>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let currentStep   = 1;
+const totalSteps  = 3;
+let selectedVertical = null;
+let selectedStates   = new Set(['CA']); // default CA
+let minEnrollment    = 2500;
+
+const US_STATES = [
+  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
+  'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
+  'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
+  'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'
+];
+
+// ── Build vertical picker ──────────────────────────────────────────────────
+function buildVerticalGrid() {
+  const grid = document.getElementById('verticalGrid');
+  grid.innerHTML = getVerticalKeys().map(key => {
+    const v = VERTICALS[key];
+    const kwCount = countKeywords(key);
+    return `
+    <div class="vert-card" id="vc_${key}" onclick="selectVertical('${key}')">
+      <div class="check" id="chk_${key}">✓</div>
+      <div class="vert-icon">${v.icon}</div>
+      <div class="vert-name" style="color:${v.color}">${v.name}</div>
+      <div class="vert-tagline">${v.tagline}</div>
+      <div class="vert-who">${v.who}</div>
+      <div class="vert-meta">
+        <span class="vert-pill">${v.intents.length} triggers</span>
+        <span class="vert-pill">${kwCount} keywords</span>
+      </div>
+    </div>`;
+  }).join('') + `
+    <div class="vert-card custom-card" onclick="selectVertical('custom')">
+      <div class="check" id="chk_custom">✓</div>
+      <div class="vert-icon">🔧</div>
+      <div class="vert-name">Build My Own</div>
+      <div class="vert-tagline">Start from a blank slate</div>
+      <div class="vert-who">For businesses that don't fit a preset vertical — you'll define your own buying triggers from scratch.</div>
+    </div>`;
+}
+
+function selectVertical(key) {
+  // Deselect all
+  document.querySelectorAll('.vert-card').forEach(c => c.classList.remove('selected'));
+
+  selectedVertical = key;
+  document.getElementById('vc_' + key)?.classList.add('selected');
+  document.getElementById('nextBtn').disabled = false;
+
+  if (key === 'custom') {
+    document.getElementById('intentPreview').classList.remove('show');
+    return;
+  }
+
+  // Show preview
+  const v = VERTICALS[key];
+  document.getElementById('previewTitle').textContent = `${v.icon} ${v.name} — buying triggers we'll load`;
+  document.getElementById('previewList').innerHTML = v.intents.map(intent => `
+    <div class="preview-intent">
+      <div class="preview-intent-header">
+        <span class="preview-intent-icon">${intent.icon}</span>
+        <span class="preview-intent-name">${intent.name}</span>
+        <span class="preview-weight">Priority ${intent.weight}/10</span>
+      </div>
+      <div class="preview-keywords">
+        ${intent.keywords.slice(0,6).map(k =>
+          `<span class="kw-tag">${k.kw}<span class="kw-weight"> ${k.w}</span></span>`
+        ).join('')}
+        ${intent.keywords.length > 6 ? `<span class="kw-tag" style="color:var(--muted);">+${intent.keywords.length-6} more</span>` : ''}
+      </div>
+    </div>`).join('');
+  document.getElementById('intentPreview').classList.add('show');
+}
+
+// ── Build state grid ───────────────────────────────────────────────────────
+function buildStateGrid() {
+  document.getElementById('stateGrid').innerHTML = US_STATES.map(s => `
+    <div class="state-btn ${selectedStates.has(s) ? 'selected' : ''}" id="sb_${s}" onclick="toggleState('${s}')">${s}</div>
+  `).join('');
+}
+
+function toggleState(s) {
+  if (selectedStates.has(s)) selectedStates.delete(s);
+  else selectedStates.add(s);
+  document.getElementById('sb_' + s)?.classList.toggle('selected', selectedStates.has(s));
+  updateNextBtn();
+}
+function selectAllStates() { US_STATES.forEach(s => { selectedStates.add(s); document.getElementById('sb_'+s)?.classList.add('selected'); }); updateNextBtn(); }
+function clearStates()     { selectedStates.clear(); document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('selected')); updateNextBtn(); }
+function updateEnrollment(v) { minEnrollment = parseInt(v); document.getElementById('enrollmentVal').textContent = parseInt(v).toLocaleString() + '+'; }
+function updateNextBtn()   { document.getElementById('nextBtn').disabled = selectedStates.size === 0; }
+
+// ── Build summary ──────────────────────────────────────────────────────────
+function buildSummary() {
+  const v = VERTICALS[selectedVertical];
+  const vName = v ? `${v.icon} ${v.name}` : '🔧 Custom';
+  const kwCount = v ? countKeywords(selectedVertical) : 0;
+  const states = [...selectedStates].sort().join(', ');
+
+  document.getElementById('configSummary').innerHTML = `
+    <div class="config-row"><span class="label">Vertical</span><span class="value">${vName}</span></div>
+    <div class="config-row"><span class="label">Buying triggers</span><span class="value">${v ? v.intents.length : 0} loaded</span></div>
+    <div class="config-row"><span class="label">Keywords</span><span class="value">${kwCount} to start</span></div>
+    <div class="config-row"><span class="label">Territory</span><span class="value">${states || 'All states'}</span></div>
+    <div class="config-row"><span class="label">Min enrollment</span><span class="value">${minEnrollment.toLocaleString()}+ students</span></div>
+    <div class="config-row"><span class="label">Data sources</span><span class="value">Board meetings · Bonds · LCAP · News</span></div>
+  `;
+}
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+function goNext() {
+  if (currentStep === 1 && !selectedVertical) return;
+  if (currentStep < totalSteps) {
+    currentStep++;
+    showStep(currentStep);
+  }
+}
+function goBack() {
+  if (currentStep > 1) { currentStep--; showStep(currentStep); }
+}
+
+function showStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+  document.getElementById('progressFill').style.width = (n / totalSteps * 100) + '%';
+  document.getElementById('stepCounter').textContent = `Step ${n} of ${totalSteps}`;
+  document.getElementById('backBtn').style.visibility = n > 1 ? 'visible' : 'hidden';
+  document.getElementById('nextBtn').style.display = n === totalSteps ? 'none' : 'inline-block';
+
+  if (n === 2) {
+    buildStateGrid();
+    document.getElementById('nextBtn').disabled = selectedStates.size === 0;
+  }
+  if (n === totalSteps) {
+    buildSummary();
+    saveConfig();
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Save + launch ──────────────────────────────────────────────────────────
+function saveConfig() {
+  const intents = selectedVertical !== 'custom' ? buildIntentsFromVertical(selectedVertical) : [];
+  localStorage.setItem('dip_vertical',   selectedVertical || '');
+  localStorage.setItem('dip_states',     JSON.stringify([...selectedStates]));
+  localStorage.setItem('dip_enrollment', minEnrollment);
+  localStorage.setItem('dip_intents',    JSON.stringify(intents));
+  localStorage.setItem('dip_onboarded',  'true');
+}
+
+function launchDashboard() {
+  window.location.href = 'settings.html';
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+// If already onboarded, skip to dashboard
+if (localStorage.getItem('dip_onboarded') === 'true') {
+  // Uncomment to auto-redirect returning users:
+  // window.location.href = 'index.html';
+}
+
+buildVerticalGrid();
+</script>
+</body>
+</html>

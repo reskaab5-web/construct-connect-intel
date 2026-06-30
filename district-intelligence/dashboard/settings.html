@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signal Configuration — District Intelligence</title>
+<style>
+  :root {
+    --bg:      #0f1117;
+    --surface: #1a1d27;
+    --surface2:#21263a;
+    --border:  #2a2d3a;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
+    --accent:  #6366f1;
+    --green:   #22c55e;
+    --red:     #ef4444;
+    --yellow:  #eab308;
+    --orange:  #f97316;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* ── Shell ── */
+  .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+  /* ── Sidebar nav ── */
+  .sidenav { background: var(--surface); border-right: 1px solid var(--border); padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+  .sidenav .logo { font-size: 15px; font-weight: 800; padding: 0 8px; margin-bottom: 20px; }
+  .sidenav .logo span { color: #818cf8; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; cursor: pointer; color: var(--muted); font-size: 13px; border: none; background: none; width: 100%; text-align: left; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(99,102,241,0.15); color: #818cf8; font-weight: 600; }
+  .nav-divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+  /* ── Main ── */
+  .main { padding: 32px; max-width: 960px; }
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
+  .page-header h1 { font-size: 22px; font-weight: 700; }
+  .page-header p { color: var(--muted); font-size: 13px; margin-top: 4px; max-width: 480px; }
+
+  /* ── Buttons ── */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: transparent; color: var(--red); border: 1px solid transparent; }
+  .btn-danger:hover { border-color: var(--red); background: rgba(239,68,68,0.1); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+  /* ── Info bar ── */
+  .info-bar { background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2); border-radius: 10px; padding: 14px 18px; margin-bottom: 28px; font-size: 13px; display: flex; gap: 12px; align-items: flex-start; }
+  .info-bar .icon { font-size: 18px; flex-shrink: 0; }
+  .info-bar strong { color: var(--text); display: block; margin-bottom: 2px; }
+  .info-bar p { color: var(--muted); }
+
+  /* ── Intent cards ── */
+  .intents-list { display: flex; flex-direction: column; gap: 16px; }
+  .intent-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color 0.15s; }
+  .intent-card:hover { border-color: rgba(99,102,241,0.4); }
+  .intent-card.collapsed .intent-body { display: none; }
+
+  .intent-header { display: flex; align-items: center; gap: 12px; padding: 16px 18px; cursor: pointer; }
+  .intent-color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .intent-icon { font-size: 20px; }
+  .intent-name-wrap { flex: 1; min-width: 0; }
+  .intent-name { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .intent-name input { background: transparent; border: none; color: var(--text); font-weight: 600; font-size: 15px; width: 100%; outline: none; }
+  .intent-name input:focus { border-bottom: 1px solid var(--accent); }
+  .intent-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .intent-meta { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .keyword-count { background: var(--surface2); border-radius: 20px; padding: 2px 10px; font-size: 12px; color: var(--muted); }
+  .weight-badge { background: rgba(99,102,241,0.15); border-radius: 20px; padding: 2px 10px; font-size: 12px; color: #818cf8; font-weight: 600; }
+  .toggle-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; width: 28px; }
+
+  /* ── Intent body ── */
+  .intent-body { border-top: 1px solid var(--border); padding: 18px; }
+  .intent-body-top { display: grid; grid-template-columns: 1fr auto; gap: 16px; margin-bottom: 16px; align-items: start; }
+  .field-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
+  .field-input { background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 12px; font-size: 13px; width: 100%; }
+  .field-input:focus { outline: none; border-color: var(--accent); }
+
+  .weight-control { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .weight-control .weight-val { font-size: 28px; font-weight: 800; color: var(--accent); line-height: 1; }
+  .weight-control .weight-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .weight-stepper { display: flex; gap: 4px; }
+  .weight-stepper button { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; width: 28px; height: 28px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .weight-stepper button:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Keywords ── */
+  .keywords-section { }
+  .keywords-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .keywords-grid { display: flex; flex-wrap: wrap; gap: 8px; min-height: 40px; margin-bottom: 12px; }
+  .keyword-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 5px 10px; font-size: 12px; border: 1px solid; cursor: default; position: relative; }
+  .keyword-chip .kw-text { font-weight: 500; }
+  .keyword-chip .kw-weight { background: rgba(255,255,255,0.1); border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 700; }
+  .keyword-chip .kw-remove { background: none; border: none; cursor: pointer; color: inherit; opacity: 0.5; font-size: 14px; line-height: 1; padding: 0 0 0 2px; }
+  .keyword-chip .kw-remove:hover { opacity: 1; }
+
+  /* Performance coloring */
+  .chip-high   { background: rgba(34,197,94,0.1);  border-color: rgba(34,197,94,0.3);  color: #86efac; }
+  .chip-medium { background: rgba(99,102,241,0.1);  border-color: rgba(99,102,241,0.3);  color: #a5b4fc; }
+  .chip-low    { background: rgba(239,68,68,0.1);  border-color: rgba(239,68,68,0.3);  color: #fca5a5; }
+  .chip-new    { background: rgba(100,116,139,0.15); border-color: rgba(100,116,139,0.3); color: #94a3b8; }
+
+  /* ── Add keyword row ── */
+  .add-keyword-row { display: flex; gap: 8px; align-items: flex-end; }
+  .add-keyword-row .kw-input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+  .add-keyword-row .kw-input:focus { outline: none; border-color: var(--accent); }
+  .add-keyword-row .kw-weight-select { background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+  .add-keyword-row .kw-context { background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 12px; font-size: 13px; width: 150px; }
+
+  /* ── Source toggles ── */
+  .source-toggles { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .source-toggle { display: flex; align-items: center; gap: 6px; background: var(--surface2); border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; border: 1px solid transparent; }
+  .source-toggle.active { border-color: var(--accent); color: #818cf8; }
+  .source-toggle input { display: none; }
+
+  /* ── Performance panel ── */
+  .perf-panel { background: var(--bg); border-radius: 8px; padding: 12px; margin-top: 12px; }
+  .perf-panel h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px; }
+  .perf-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .perf-table th { text-align: left; color: var(--muted); padding: 4px 8px; font-weight: 500; font-size: 11px; }
+  .perf-table td { padding: 6px 8px; border-top: 1px solid var(--border); }
+  .perf-bar { height: 4px; border-radius: 2px; background: var(--border); width: 80px; }
+  .perf-bar-fill { height: 100%; border-radius: 2px; }
+
+  /* ── Add intent button ── */
+  .add-intent-card { background: transparent; border: 2px dashed var(--border); border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; color: var(--muted); font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .add-intent-card:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Save bar ── */
+  .save-bar { position: fixed; bottom: 0; left: 220px; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; z-index: 50; transform: translateY(100%); transition: transform 0.2s; }
+  .save-bar.visible { transform: translateY(0); }
+  .save-bar .msg { font-size: 13px; color: var(--muted); }
+
+  /* ── Tooltip ── */
+  [data-tip] { position: relative; }
+  [data-tip]:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #1e2030; border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 11px; color: var(--text); white-space: nowrap; pointer-events: none; z-index: 99; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 2px; background: var(--surface2); border-radius: 8px; padding: 3px; margin-bottom: 24px; align-self: flex-start; width: fit-content; }
+  .tab-btn { padding: 6px 16px; border-radius: 6px; border: none; background: none; color: var(--muted); cursor: pointer; font-size: 13px; }
+  .tab-btn.active { background: var(--surface); color: var(--text); }
+
+  /* ── Empty ── */
+  .empty-kw { color: var(--muted); font-size: 12px; font-style: italic; padding: 8px 0; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sidebar -->
+  <nav class="sidenav">
+    <div class="logo">District<span>Intel</span></div>
+    <button class="nav-item" onclick="location.href='index.html'">📊 Dashboard</button>
+    <button class="nav-item" onclick="location.href='index.html#tab-signals'">⚡ Signal Feed</button>
+    <div class="nav-divider"></div>
+    <button class="nav-item active">⚙️ Signal Config</button>
+    <button class="nav-item">🗺️ Territory</button>
+    <button class="nav-item">🔗 Integrations</button>
+    <button class="nav-item">👥 Team</button>
+  </nav>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <h1>Signal Configuration</h1>
+        <p>Define the buying triggers that matter to your business. We'll monitor every district for these signals and score them accordingly.</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="openTestModal()">🧪 Test Keywords</button>
+      </div>
+    </div>
+
+    <div class="info-bar">
+      <div class="icon">💡</div>
+      <div>
+        <strong>Think in buying triggers, not keywords</strong>
+        <p>Each intent answers "what would make a district likely to buy from us?" Keywords are just the signals we look for in board meetings, bond documents, and LCAP filings to detect that intent. Start with 3–5 intents, add keywords as you learn what fires.</p>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('intents',this)">Buying Triggers</button>
+      <button class="tab-btn" onclick="switchTab('performance',this)">Keyword Performance</button>
+      <button class="tab-btn" onclick="switchTab('templates',this)">Vertical Templates</button>
+    </div>
+
+    <!-- ── Intents Tab ── -->
+    <div id="tab-intents">
+      <div class="intents-list" id="intentsList"></div>
+      <div class="add-intent-card" onclick="addIntent()" style="margin-top:12px;">
+        + Add Buying Trigger
+      </div>
+    </div>
+
+    <!-- ── Performance Tab ── -->
+    <div id="tab-performance" style="display:none;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div>
+            <div style="font-weight:600;margin-bottom:2px;">Keyword Performance</div>
+            <div style="font-size:12px;color:var(--muted);">Based on rep feedback — which keywords are surfacing real opportunities vs. noise</div>
+          </div>
+          <div style="display:flex;gap:8px;font-size:12px;">
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;"></span>High signal (≥70% useful)</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;"></span>Moderate</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;"></span>Noisy</span>
+          </div>
+        </div>
+        <div id="perfTableContainer"></div>
+      </div>
+    </div>
+
+    <!-- ── Templates Tab ── -->
+    <div id="tab-templates" style="display:none;">
+      <div style="margin-bottom:12px;font-size:13px;color:var(--muted);">Select a vertical to load its buying triggers and keywords. Your current configuration will be replaced.</div>
+      <div id="templateGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <!-- Populated by renderTemplateGrid() on init -->
+      </div>
+      <div style="margin-top:16px;padding:16px;background:var(--surface);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-weight:600;margin-bottom:4px;">Building your own vertical?</div>
+        <div style="font-size:13px;color:var(--muted);">Enterprise plan includes a 1-hour onboarding call where we configure your buying triggers from scratch based on your actual sales process. <a href="mailto:ron.sams@locallaunchmedia.com" style="color:#818cf8;">Contact us →</a></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Save bar -->
+<div class="save-bar" id="saveBar">
+  <span class="msg" id="saveMsg">You have unsaved changes</span>
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-ghost btn-sm" onclick="discardChanges()">Discard</button>
+    <button class="btn btn-primary btn-sm" onclick="saveConfig()">Save Configuration</button>
+  </div>
+</div>
+
+<!-- Test modal -->
+<div id="testModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;" onclick="closeTestModal(event)">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(600px,95vw);padding:24px;max-height:80vh;overflow-y:auto;">
+    <h3 style="margin-bottom:4px;">Test a Keyword</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">See which recent signals this keyword would have matched before adding it to your config.</p>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <input id="testKwInput" type="text" placeholder='Try "audio quality" or "classroom renovation"' class="field-input" style="flex:1;">
+      <button class="btn btn-primary" onclick="runKeywordTest()">Test</button>
+    </div>
+    <div id="testResults"></div>
+  </div>
+</div>
+
+<script src="vertical-library.js"></script>
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let intents = [];
+let dirty = false;
+
+// ── Init ───────────────────────────────────────────────────────────────────
+const saved = localStorage.getItem('dip_intents');
+if (saved) {
+  try { intents = JSON.parse(saved); } catch(e) { intents = []; }
+}
+if (!intents.length) {
+  intents = buildIntentsFromVertical('instructional_audio');
+}
+renderIntents();
+renderPerfTable();
+renderTemplateGrid();
+
+// ── Template grid (dynamic — sourced from vertical-library.js) ─────────────
+function renderTemplateGrid() {
+  const grid = document.getElementById('templateGrid');
+  if (!grid || typeof VERTICALS === 'undefined') return;
+  grid.innerHTML = Object.entries(VERTICALS).map(([key, v]) => {
+    const kwCount  = countKeywords(key);
+    const intentCount = (v.intents || []).length;
+    return `
+    <div class="intent-card" style="cursor:pointer;" onclick="loadTemplate('${key}')">
+      <div class="intent-header">
+        <div class="intent-icon">${v.icon}</div>
+        <div class="intent-name-wrap">
+          <div class="intent-name">${escHtml(v.name)}</div>
+          <div class="intent-desc">${escHtml(v.who || v.tagline || '')}</div>
+        </div>
+        <div style="width:10px;height:10px;border-radius:50%;background:${v.color};flex-shrink:0;margin-left:auto;"></div>
+      </div>
+      <div style="padding:0 18px 14px;font-size:12px;color:var(--muted);">
+        ${intentCount} buying triggers · ${kwCount} keywords
+        ${v.tagline ? `<br><span style="font-style:italic;">${escHtml(v.tagline)}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Template loader ────────────────────────────────────────────────────────
+function loadTemplate(key) {
+  const v = (typeof VERTICALS !== 'undefined') ? VERTICALS[key] : null;
+  const label = v ? v.name : key;
+  if (!confirm(`Load the "${label}" template? This will replace your current configuration.`)) return;
+  intents = buildIntentsFromVertical(key);
+  markDirty();
+  renderIntents();
+  switchTab('intents', document.querySelector('.tab-btn'));
+}
+
+// ── Render intents ─────────────────────────────────────────────────────────
+function renderIntents() {
+  const list = document.getElementById('intentsList');
+  list.innerHTML = intents.map((intent, idx) => renderIntent(intent, idx)).join('');
+}
+
+function renderIntent(intent, idx) {
+  const kwHtml = intent.keywords.map(kw => renderChip(kw, intent, idx)).join('');
+  const perfClass = chipPerf(kw => kw);
+
+  return `
+  <div class="intent-card ${intent.collapsed ? 'collapsed' : ''}" id="ic_${intent.id}">
+    <div class="intent-header" onclick="toggleIntent('${intent.id}')">
+      <span class="intent-color-dot" style="background:${intent.color}"></span>
+      <span class="intent-icon">${intent.icon}</span>
+      <div class="intent-name-wrap">
+        <div class="intent-name" onclick="event.stopPropagation()">
+          <input value="${escHtml(intent.name)}" oninput="updateIntentName('${intent.id}', this.value)" placeholder="Describe the buying trigger...">
+        </div>
+        <div class="intent-desc">${escHtml(intent.description || 'Add a description...')}</div>
+      </div>
+      <div class="intent-meta">
+        <span class="keyword-count">${intent.keywords.length} keyword${intent.keywords.length !== 1 ? 's' : ''}</span>
+        <span class="weight-badge" data-tip="How much this trigger boosts the district score">Priority ${intent.weight}/10</span>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeIntent('${intent.id}')" style="font-size:16px;padding:4px 8px;">×</button>
+        <button class="toggle-btn" onclick="event.stopPropagation();toggleIntent('${intent.id}')">${intent.collapsed ? '▸' : '▾'}</button>
+      </div>
+    </div>
+
+    <div class="intent-body">
+      <div class="intent-body-top">
+        <div>
+          <div class="field-label">What does this trigger mean for your sales process?</div>
+          <textarea class="field-input" rows="2" placeholder="e.g. When we see this, we call the facilities director within 48 hours with a proposal..." onchange="updateIntentDesc('${intent.id}', this.value)">${escHtml(intent.description || '')}</textarea>
+        </div>
+        <div class="weight-control">
+          <div class="weight-val" id="wv_${intent.id}">${intent.weight}</div>
+          <div class="weight-label">Priority</div>
+          <div class="weight-stepper">
+            <button onclick="adjustWeight('${intent.id}', -1)">−</button>
+            <button onclick="adjustWeight('${intent.id}', +1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="keywords-section">
+        <div class="keywords-header">
+          <div class="field-label" style="margin:0">Keywords & Phrases</div>
+          <div style="font-size:11px;color:var(--muted);">
+            🟢 high signal &nbsp; 🔵 moderate &nbsp; 🔴 noisy &nbsp; ⚫ untested
+          </div>
+        </div>
+
+        <div class="keywords-grid" id="kwgrid_${intent.id}">
+          ${kwHtml || '<span class="empty-kw">No keywords yet — add some below</span>'}
+        </div>
+
+        <div class="add-keyword-row">
+          <input type="text" class="kw-input" id="kwinput_${intent.id}" placeholder='Add a keyword or phrase...' onkeydown="if(event.key==='Enter') addKeyword('${intent.id}')">
+          <select class="kw-weight-select" id="kwweight_${intent.id}" title="Signal strength when this keyword matches">
+            <option value="10">10 — Near-certain</option>
+            <option value="9">9 — Very strong</option>
+            <option value="8">8 — Strong</option>
+            <option value="7">7 — Good</option>
+            <option value="6" selected>6 — Moderate</option>
+            <option value="5">5 — Weak</option>
+            <option value="4">4 — Very weak</option>
+            <option value="3">3 — Context clue</option>
+          </select>
+          <input type="text" class="kw-context" id="kwctx_${intent.id}" placeholder='Near word (opt)' title="Only match if this word appears nearby">
+          <button class="btn btn-primary btn-sm" onclick="addKeyword('${intent.id}')">+ Add</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">
+          Tip: "Near word" matches keyword only when another word appears within ~50 characters. Use it to reduce noise — e.g. keyword "audio", near word "classroom".
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderChip(kw, intent, intentIdx) {
+  const total = kw.useful + kw.noise;
+  const rate  = total > 0 ? kw.useful / total : -1;
+  const cls   = rate < 0 ? 'chip-new' : rate >= 0.7 ? 'chip-high' : rate >= 0.4 ? 'chip-medium' : 'chip-low';
+  const dot   = rate < 0 ? '⚫' : rate >= 0.7 ? '🟢' : rate >= 0.4 ? '🔵' : '🔴';
+  const tip   = rate < 0 ? 'Untested — no rep feedback yet' : `${Math.round(rate*100)}% useful (${kw.useful} useful, ${kw.noise} noise)`;
+
+  return `<span class="keyword-chip ${cls}" data-tip="${tip}">
+    <span style="font-size:10px;">${dot}</span>
+    <span class="kw-text">${escHtml(kw.text)}</span>
+    <span class="kw-weight">${kw.weight}</span>
+    ${kw.context ? `<span style="font-size:10px;opacity:0.6">near:"${escHtml(kw.context)}"</span>` : ''}
+    <button class="kw-remove" onclick="removeKeyword('${intent.id}','${kw.id}')">×</button>
+  </span>`;
+}
+
+// ── Performance table ──────────────────────────────────────────────────────
+function renderPerfTable() {
+  const allKws = intents.flatMap(i => i.keywords.map(k => ({...k, intentName: i.name, intentColor: i.color})));
+  if (!allKws.length) {
+    document.getElementById('perfTableContainer').innerHTML = '<div class="empty-kw" style="padding:16px;">No keywords configured yet.</div>';
+    return;
+  }
+
+  const sorted = [...allKws].sort((a,b) => (b.useful+b.noise) - (a.useful+a.noise));
+
+  document.getElementById('perfTableContainer').innerHTML = `
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>Keyword</th>
+          <th>Trigger</th>
+          <th>Weight</th>
+          <th>Matches</th>
+          <th>Useful Rate</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted.map(k => {
+          const total = k.useful + k.noise;
+          const rate  = total > 0 ? k.useful / total : null;
+          const color = rate === null ? '#64748b' : rate >= 0.7 ? '#22c55e' : rate >= 0.4 ? '#6366f1' : '#ef4444';
+          const label = rate === null ? 'Untested' : rate >= 0.7 ? 'High Signal' : rate >= 0.4 ? 'Moderate' : 'Noisy';
+          return `
+          <tr>
+            <td style="font-weight:500;">${escHtml(k.text)}${k.context ? ` <span style="font-size:10px;color:var(--muted)">near:"${escHtml(k.context)}"</span>` : ''}</td>
+            <td><span style="font-size:11px;color:${k.intentColor}">●</span> ${escHtml(k.intentName.slice(0,30))}${k.intentName.length>30?'…':''}</td>
+            <td style="font-weight:600;color:#818cf8;">${k.weight}/10</td>
+            <td>${k.matches}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="perf-bar">
+                  <div class="perf-bar-fill" style="width:${rate !== null ? Math.round(rate*100) : 0}%;background:${color};"></div>
+                </div>
+                ${rate !== null ? Math.round(rate*100)+'%' : '–'}
+              </div>
+            </td>
+            <td><span style="color:${color};font-size:12px;font-weight:600;">${label}</span></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Mutations ──────────────────────────────────────────────────────────────
+function addIntent() {
+  intents.push({
+    id: 'intent_' + Date.now(),
+    name: '',
+    description: '',
+    icon: '🎯',
+    color: '#6366f1',
+    weight: 5,
+    collapsed: false,
+    keywords: []
+  });
+  markDirty();
+  renderIntents();
+  // Focus the name input of the new intent
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.intent-name input');
+    if (inputs.length) inputs[inputs.length-1].focus();
+  }, 50);
+}
+
+function removeIntent(id) {
+  if (!confirm('Remove this buying trigger and all its keywords?')) return;
+  intents = intents.filter(i => i.id !== id);
+  markDirty();
+  renderIntents();
+}
+
+function toggleIntent(id) {
+  const intent = intents.find(i => i.id === id);
+  if (intent) intent.collapsed = !intent.collapsed;
+  renderIntents();
+}
+
+function updateIntentName(id, val) {
+  const i = intents.find(x => x.id === id);
+  if (i) { i.name = val; markDirty(); }
+}
+
+function updateIntentDesc(id, val) {
+  const i = intents.find(x => x.id === id);
+  if (i) { i.description = val; markDirty(); }
+}
+
+function adjustWeight(id, delta) {
+  const i = intents.find(x => x.id === id);
+  if (!i) return;
+  i.weight = Math.max(1, Math.min(10, i.weight + delta));
+  document.getElementById('wv_' + id).textContent = i.weight;
+  markDirty();
+}
+
+function addKeyword(intentId) {
+  const input   = document.getElementById('kwinput_'  + intentId);
+  const wSelect = document.getElementById('kwweight_' + intentId);
+  const ctx     = document.getElementById('kwctx_'    + intentId);
+
+  const text = input.value.trim().toLowerCase();
+  if (!text) return;
+
+  const intent = intents.find(i => i.id === intentId);
+  if (!intent) return;
+  if (intent.keywords.some(k => k.text === text)) {
+    input.style.borderColor = 'var(--red)';
+    setTimeout(() => input.style.borderColor = '', 1500);
+    return;
+  }
+
+  intent.keywords.push({
+    id: 'kw_' + Math.random().toString(36).slice(2),
+    text,
+    weight: parseInt(wSelect.value),
+    context: ctx.value.trim().toLowerCase(),
+    sources: { youtube: true, lcap: true, bonds: true, news: true },
+    matches: 0,
+    useful: 0,
+    noise: 0,
+  });
+
+  input.value = '';
+  ctx.value   = '';
+  markDirty();
+  renderIntents();
+}
+
+function removeKeyword(intentId, kwId) {
+  const intent = intents.find(i => i.id === intentId);
+  if (intent) {
+    intent.keywords = intent.keywords.filter(k => k.id !== kwId);
+    markDirty();
+    renderIntents();
+  }
+}
+
+// ── Dirty state ────────────────────────────────────────────────────────────
+function markDirty() {
+  dirty = true;
+  document.getElementById('saveBar').classList.add('visible');
+}
+
+function saveConfig() {
+  localStorage.setItem('dip_intents', JSON.stringify(intents));
+  dirty = false;
+  document.getElementById('saveBar').classList.remove('visible');
+  document.getElementById('saveMsg').textContent = '✓ Saved';
+  setTimeout(() => document.getElementById('saveMsg').textContent = 'You have unsaved changes', 2000);
+  renderPerfTable();
+
+  // In production: POST to /api/org/intents with the config
+  console.log('Config saved:', JSON.stringify(intents, null, 2));
+}
+
+function discardChanges() {
+  const saved = localStorage.getItem('dip_intents');
+  intents = saved ? JSON.parse(saved) : buildIntentsFromVertical('instructional_audio');
+  dirty   = false;
+  document.getElementById('saveBar').classList.remove('visible');
+  renderIntents();
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  ['intents','performance','templates'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.style.display = t === name ? 'block' : 'none';
+  });
+  if (name === 'performance') renderPerfTable();
+}
+
+// ── Keyword test modal ─────────────────────────────────────────────────────
+function openTestModal()  { document.getElementById('testModal').style.display = 'flex'; }
+function closeTestModal(e) { if (!e || e.target === document.getElementById('testModal')) document.getElementById('testModal').style.display = 'none'; }
+
+function runKeywordTest() {
+  const kw = document.getElementById('testKwInput').value.trim().toLowerCase();
+  if (!kw) return;
+
+  // Simulate matching against recent signals (in production: POST /api/keywords/test)
+  const mockMatches = [
+    { district: 'Fresno Unified SD', date: '2025-06-14', source: 'LCAP Filing', excerpt: `...Goal 2 allocates $2.1M for ${kw} systems in all classrooms...`, strength: 9 },
+    { district: 'Elk Grove USD', date: '2025-05-28', source: 'Board Meeting', excerpt: `...Director raised concern about ${kw} quality in portable classrooms...`, strength: 7 },
+    { district: 'San Diego USD', date: '2025-05-12', source: 'Bond Measure', excerpt: `...project scope includes renovation with attention to ${kw} infrastructure...`, strength: 6 },
+  ].filter(() => Math.random() > 0.2); // simulate some not matching
+
+  const el = document.getElementById('testResults');
+  if (!mockMatches.length) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:12px 0;">No recent signals would match "<strong>${kw}</strong>". This keyword may be too specific or hasn't appeared yet — it may still be worth adding to catch future matches.</div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">"${kw}" would have matched ${mockMatches.length} signal${mockMatches.length>1?'s':''} in the last 90 days:</div>
+    ${mockMatches.map(m => `
+    <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <strong style="font-size:13px;">${m.district}</strong>
+        <span style="font-size:11px;color:var(--muted);">${m.source} · ${m.date} · Strength ${m.strength}/10</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);font-style:italic;">"${m.excerpt}"</div>
+    </div>`).join('')}
+    <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="promptAddKeyword('${kw}')">Add "${kw}" to a trigger →</button>`;
+}
+
+function promptAddKeyword(kw) {
+  const names = intents.map((i,idx) => `${idx+1}. ${i.name}`).join('\n');
+  const choice = prompt(`Which buying trigger should "${kw}" go under?\n\n${names}\n\nEnter a number:`);
+  const idx = parseInt(choice) - 1;
+  if (isNaN(idx) || !intents[idx]) return;
+
+  const intent = intents[idx];
+  if (!intent.keywords.some(k => k.text === kw)) {
+    intent.keywords.push({ id: 'kw_'+Math.random().toString(36).slice(2), text: kw, weight: 6, context: '', sources: { youtube:true, lcap:true, bonds:true, news:true }, matches:0, useful:0, noise:0 });
+    markDirty();
+    renderIntents();
+  }
+  document.getElementById('testModal').style.display = 'none';
+  switchTab('intents', document.querySelector('.tab-btn'));
+}
+
+// ── Utils ──────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
